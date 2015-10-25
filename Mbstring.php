@@ -60,7 +60,7 @@ namespace Symfony\Polyfill\Mbstring;
  *
  * @internal
  */
-class Mbstring
+final class Mbstring
 {
     const MB_CASE_FOLD = PHP_INT_MAX;
 
