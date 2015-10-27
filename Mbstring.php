@@ -264,7 +264,7 @@ final class Mbstring
             $encoding = self::$internalEncoding;
         }
 
-        return false !== mb_detect_encoding($var, array($encoding), true);
+        return self::mb_detect_encoding($var, array($encoding)) || false !== @iconv($encoding, $encoding, $var);
     }
 
     public static function mb_detect_encoding($str, $encodingList = null, $strict = false)
