@@ -339,7 +339,7 @@ final class Mbstring
                 return strlen($s);
         }
 
-        return iconv_strlen($s, $encoding);
+        return @iconv_strlen($s, $encoding);
     }
 
     public static function mb_strpos($haystack, $needle, $offset = 0, $encoding = null)
