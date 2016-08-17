@@ -96,7 +96,7 @@ final class Mbstring
                 $fromEncoding = 'Windows-1252';
             }
             if ('UTF-8' !== $fromEncoding) {
-                $s = iconv($fromEncoding, 'UTF-8', $s);
+                $s = iconv($fromEncoding, 'UTF-8//IGNORE', $s);
             }
 
             return preg_replace_callback('/[\x80-\xFF]+/', array(__CLASS__, 'html_encoding_callback'), $s);
@@ -107,7 +107,7 @@ final class Mbstring
             $fromEncoding = 'UTF-8';
         }
 
-        return iconv($fromEncoding, $toEncoding, $s);
+        return iconv($fromEncoding, $toEncoding.'//IGNORE', $s);
     }
 
     public static function mb_convert_variables($toEncoding, $fromEncoding, &$a = null, &$b = null, &$c = null, &$d = null, &$e = null, &$f = null)
@@ -145,7 +145,7 @@ final class Mbstring
         if ('UTF-8' === $encoding) {
             $encoding = null;
         } else {
-            $s = iconv($encoding, 'UTF-8', $s);
+            $s = iconv($encoding, 'UTF-8//IGNORE', $s);
         }
 
         if (MB_CASE_TITLE == $mode) {
@@ -202,7 +202,7 @@ final class Mbstring
             return $s;
         }
 
-        return iconv('UTF-8', $encoding, $s);
+        return iconv('UTF-8', $encoding.'//IGNORE', $s);
     }
 
     public static function mb_internal_encoding($encoding = null)
@@ -514,7 +514,7 @@ final class Mbstring
         $encoding = self::getEncoding($encoding);
 
         if ('UTF-8' !== $encoding) {
-            $s = iconv($encoding, 'UTF-8', $s);
+            $s = iconv($encoding, 'UTF-8//IGNORE', $s);
         }
 
         $s = preg_replace('/[\x{1100}-\x{115F}\x{2329}\x{232A}\x{2E80}-\x{303E}\x{3040}-\x{A4CF}\x{AC00}-\x{D7A3}\x{F900}-\x{FAFF}\x{FE10}-\x{FE19}\x{FE30}-\x{FE6F}\x{FF00}-\x{FF60}\x{FFE0}-\x{FFE6}\x{20000}-\x{2FFFD}\x{30000}-\x{3FFFD}]/u', '', $s, -1, $wide);
