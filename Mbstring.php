@@ -147,6 +147,9 @@ final class Mbstring
 
         if ('UTF-8' === $encoding) {
             $encoding = null;
+            if (!preg_match('//u', $s)) {
+                $s = @iconv('UTF-8', 'UTF-8//IGNORE', $s);
+            }
         } else {
             $s = iconv($encoding, 'UTF-8//IGNORE', $s);
         }
