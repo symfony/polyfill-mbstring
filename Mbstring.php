@@ -21,6 +21,7 @@ namespace Symfony\Polyfill\Mbstring;
  * - mb_decode_mimeheader    - Decode string in MIME header field
  * - mb_encode_mimeheader    - Encode string for MIME header XXX NATIVE IMPLEMENTATION IS REALLY BUGGED
  * - mb_convert_case         - Perform case folding on a string
+ * - mb_detect_encoding      - Detect character encoding
  * - mb_get_info             - Get internal settings of mbstring
  * - mb_http_input           - Detect HTTP input character encoding
  * - mb_http_output          - Set/Get HTTP output character encoding
