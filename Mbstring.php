@@ -44,7 +44,7 @@ namespace Symfony\Polyfill\Mbstring;
  * - mb_strrchr              - Finds the last occurrence of a character in a string within another
  * - mb_strrichr             - Finds the last occurrence of a character in a string within another, case insensitive
  * - mb_strripos             - Finds position of last occurrence of a string within another, case insensitive
- * - mb_strstr               - Finds first occurrence of a string within anothers
+ * - mb_strstr               - Finds first occurrence of a string within another
  * - mb_strwidth             - Return width of string
  * - mb_substr_count         - Count the number of substring occurrences
  *
