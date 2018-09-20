@@ -704,6 +704,10 @@ final class Mbstring
             $s = mb_convert_encoding($s, 'UTF-8', $encoding);
         }
 
+        if (1 === \strlen($s)) {
+            return \ord($s);
+        }
+
         $code = ($s = unpack('C*', substr($s, 0, 4))) ? $s[1] : 0;
         if (0xF0 <= $code) {
             return (($code - 0xF0) << 18) + (($s[2] - 0x80) << 12) + (($s[3] - 0x80) << 6) + $s[4] - 0x80;
