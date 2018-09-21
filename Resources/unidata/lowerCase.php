@@ -1095,7 +1095,7 @@ static $data = array (
   '𑢿' => '𑣟',
 );
 
-$result =& $data;
+$result = &$data;
 unset($data);
 
 return $result;

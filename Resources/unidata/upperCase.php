@@ -1103,7 +1103,7 @@ static $data = array (
   '𑣟' => '𑢿',
 );
 
-$result =& $data;
+$result = &$data;
 unset($data);
 
 return $result;
