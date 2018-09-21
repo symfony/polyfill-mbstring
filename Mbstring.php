@@ -72,8 +72,8 @@ final class Mbstring
     private static $language = 'neutral';
     private static $internalEncoding = 'UTF-8';
     private static $caseFold = array(
-        array('µ','ſ',"\xCD\x85",'ς',"\xCF\x90","\xCF\x91","\xCF\x95","\xCF\x96","\xCF\xB0","\xCF\xB1","\xCF\xB5","\xE1\xBA\x9B","\xE1\xBE\xBE"),
-        array('μ','s','ι',       'σ','β',       'θ',       'φ',       'π',       'κ',       'ρ',       'ε',       "\xE1\xB9\xA1",'ι'),
+        array('µ', 'ſ', "\xCD\x85", 'ς', "\xCF\x90", "\xCF\x91", "\xCF\x95", "\xCF\x96", "\xCF\xB0", "\xCF\xB1", "\xCF\xB5", "\xE1\xBA\x9B", "\xE1\xBE\xBE"),
+        array('μ', 's', 'ι',        'σ', 'β',        'θ',        'φ',        'π',        'κ',        'ρ',        'ε',        "\xE1\xB9\xA1", 'ι'),
     );
 
     public static function mb_convert_encoding($s, $toEncoding, $fromEncoding = null)
@@ -461,6 +461,7 @@ final class Mbstring
                     if (strncmp($enc, 'ISO-8859-', 9)) {
                         return false;
                     }
+                    // no break
                 case 'ASCII':
                 case 'UTF8':
                 case 'UTF-8':
