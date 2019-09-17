@@ -512,7 +512,9 @@ final class Mbstring
             $offset = 0;
         } elseif ($offset = (int) $offset) {
             if ($offset < 0) {
-                $haystack = self::mb_substr($haystack, 0, $offset, $encoding);
+                if (0 > $offset += self::mb_strlen($needle)) {
+                    $haystack = self::mb_substr($haystack, 0, $offset, $encoding);
+                }
                 $offset = 0;
             } else {
                 $haystack = self::mb_substr($haystack, $offset, 2147483647, $encoding);
