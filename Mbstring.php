@@ -534,7 +534,7 @@ final class Mbstring
             return null;
         }
 
-        if ($split_length < 1) {
+        if (1 > $split_length = (int) $split_length) {
             trigger_error('The length of each segment must be greater than zero', E_USER_WARNING);
 
             return false;
@@ -542,6 +542,10 @@ final class Mbstring
 
         if (null === $encoding) {
             $encoding = mb_internal_encoding();
+        }
+
+        if ('UTF-8' === $encoding = self::getEncoding($encoding)) {
+            return preg_split("/(.{{$split_length}})/u", $string, null, PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_NO_EMPTY);
         }
 
         $result = array();
@@ -817,11 +821,16 @@ final class Mbstring
             return self::$internalEncoding;
         }
 
+        if ('UTF-8' === $encoding) {
+            return 'UTF-8';
+        }
+
         $encoding = strtoupper($encoding);
 
         if ('8BIT' === $encoding || 'BINARY' === $encoding) {
             return 'CP850';
         }
+
         if ('UTF8' === $encoding) {
             return 'UTF-8';
         }
