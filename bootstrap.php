@@ -11,11 +11,13 @@
 
 use Symfony\Polyfill\Mbstring as p;
 
-if (!function_exists('mb_strlen')) {
+if (!defined('MB_CASE_UPPER')) {
     define('MB_CASE_UPPER', 0);
     define('MB_CASE_LOWER', 1);
     define('MB_CASE_TITLE', 2);
+}
 
+if (!function_exists('mb_strlen')) {
     function mb_convert_encoding($s, $to, $from = null) { return p\Mbstring::mb_convert_encoding($s, $to, $from); }
     function mb_decode_mimeheader($s) { return p\Mbstring::mb_decode_mimeheader($s); }
     function mb_encode_mimeheader($s, $charset = null, $transferEnc = null, $lf = null, $indent = null) { return p\Mbstring::mb_encode_mimeheader($s, $charset, $transferEnc, $lf, $indent); }
