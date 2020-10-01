@@ -1,0 +1,31 @@
+<?php
+
+/*
+ * This file is part of the Symfony package.
+ *
+ * (c) Fabien Potencier <fabien@symfony.com>
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
+use Symfony\Polyfill\Mbstring as p;
+
+if (!function_exists('mb_convert_variables')) {
+    /**
+     * Convert character code in variable(s)
+     */
+    function mb_convert_variables($to_encoding, $from_encoding, &$var, &...$vars)
+    {
+        $vars = [&$var, ...$vars];
+
+        $ok = true;
+        array_walk_recursive($vars, function (&$v) use (&$ok, $to_encoding, $from_encoding) {
+            if (false === $v = p\Mbstring::mb_convert_encoding($v, $to_encoding, $from_encoding)) {
+                $ok = false;
+            }
+        });
+
+        return $ok ? $from_encoding : false;
+    }
+}
