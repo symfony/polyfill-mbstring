@@ -383,7 +383,7 @@ final class Mbstring
 
     public static function mb_list_encodings()
     {
-        return array('UTF-8');
+        return array('ASCII', 'UTF-8');
     }
 
     public static function mb_encoding_aliases($encoding)
@@ -392,6 +392,8 @@ final class Mbstring
             case 'UTF8':
             case 'UTF-8':
                 return array('utf8');
+            case 'ASCII':
+                return array('cp367', 'csASCII', 'iso-ir-6', 'IBM367', 'IBM-367');
         }
 
         return false;
@@ -533,18 +535,20 @@ final class Mbstring
 
             return null;
         }
-
-        if (1 > $split_length = (int) $split_length) {
-            trigger_error('The length of each segment must be greater than zero', E_USER_WARNING);
+        if (null !== $split_length && !\is_bool($split_length) && !\is_numeric($split_length)) {
+            trigger_error('mb_str_split() expects parameter 2 to be int, '.\gettype($split_length).' given', E_USER_WARNING);
+            
+            return null;
+        }
+        $split_length = (int) $split_length;
+        if (1 > $split_length) {
+            trigger_error('mb_str_split(): The length of each segment must be greater than zero', E_USER_WARNING);
 
             return false;
         }
 
-        if (null === $encoding) {
-            $encoding = mb_internal_encoding();
-        }
-
-        if ('UTF-8' === $encoding = self::getEncoding($encoding)) {
+        $encoding = self::getEncoding($encoding);
+        if ('UTF-8' === $encoding) {
             $rx = '/(';
             while (65535 < $split_length) {
                 $rx .= '.{65535}';
@@ -822,7 +826,7 @@ final class Mbstring
 
         return false;
     }
-
+    
     private static function getEncoding($encoding)
     {
         if (null === $encoding) {
