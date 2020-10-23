@@ -111,10 +111,12 @@ if (!function_exists('mb_http_input')) {
     function mb_http_input($type = '') { return p\Mbstring::mb_http_input($type); }
 }
 
-if (PHP_VERSION_ID >= 80000) {
-    require_once __DIR__.'/Resources/mb_convert_variables.php8';
-} elseif (!function_exists('mb_convert_variables')) {
-    function mb_convert_variables($toEncoding, $fromEncoding, &$a = null, &$b = null, &$c = null, &$d = null, &$e = null, &$f = null) { return p\Mbstring::mb_convert_variables($toEncoding, $fromEncoding, $a, $b, $c, $d, $e, $f); }
+if (!function_exists('mb_convert_variables')) {
+    if (PHP_VERSION_ID >= 80000) {
+        function mb_convert_variables($to_encoding, $from_encoding, &$var, &...$vars) { return p\Mbstring::mb_convert_variables($to_encoding, $from_encoding, $var, ...$vars); }
+    } else {
+        function mb_convert_variables($to_encoding, $from_encoding, &...$vars) { return p\Mbstring::mb_convert_variables($to_encoding, $from_encoding, ...$vars); }
+    }
 }
 
 if (!function_exists('mb_ord')) {
