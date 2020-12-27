@@ -145,7 +145,7 @@ final class Mbstring
             return null;
         }
 
-        if (!\is_array($convmap) || !$convmap) {
+        if (!\is_array($convmap) || (80000 > \PHP_VERSION_ID && !$convmap)) {
             return false;
         }
 
@@ -205,7 +205,7 @@ final class Mbstring
             return null;
         }
 
-        if (!\is_array($convmap) || !$convmap) {
+        if (!\is_array($convmap) || (80000 > \PHP_VERSION_ID && !$convmap)) {
             return false;
         }
 
@@ -351,15 +351,19 @@ final class Mbstring
             return self::$internalEncoding;
         }
 
-        $encoding = self::getEncoding($encoding);
+        $normalizedEncoding = self::getEncoding($encoding);
 
-        if ('UTF-8' === $encoding || false !== @iconv($encoding, $encoding, ' ')) {
-            self::$internalEncoding = $encoding;
+        if ('UTF-8' === $normalizedEncoding || false !== @iconv($normalizedEncoding, $normalizedEncoding, ' ')) {
+            self::$internalEncoding = $normalizedEncoding;
 
             return true;
         }
 
-        return false;
+        if (80000 > \PHP_VERSION_ID) {
+            return false;
+        }
+
+        throw new \ValueError(sprintf('Argument #1 ($encoding) must be a valid encoding, "%s" given', $encoding));
     }
 
     public static function mb_language($lang = null)
@@ -368,15 +372,19 @@ final class Mbstring
             return self::$language;
         }
 
-        switch ($lang = strtolower($lang)) {
+        switch ($normalizedLang = strtolower($lang)) {
             case 'uni':
             case 'neutral':
-                self::$language = $lang;
+                self::$language = $normalizedLang;
 
                 return true;
         }
 
-        return false;
+        if (80000 > \PHP_VERSION_ID) {
+            return false;
+        }
+
+        throw new \ValueError(sprintf('Argument #1 ($language) must be a valid language, "%s" given', $lang));
     }
 
     public static function mb_list_encodings()
@@ -491,9 +499,13 @@ final class Mbstring
 
         $needle = (string) $needle;
         if ('' === $needle) {
-            trigger_error(__METHOD__.': Empty delimiter', E_USER_WARNING);
+            if (80000 > \PHP_VERSION_ID) {
+                trigger_error(__METHOD__.': Empty delimiter', E_USER_WARNING);
 
-            return false;
+                return false;
+            }
+
+            return 0;
         }
 
         return iconv_strpos($haystack, $needle, $offset, $encoding);
@@ -519,7 +531,9 @@ final class Mbstring
             }
         }
 
-        $pos = iconv_strrpos($haystack, $needle, $encoding);
+        $pos = $needle !== '' || 80000 > \PHP_VERSION_ID
+            ? iconv_strrpos($haystack, $needle, $encoding)
+            : self::mb_strlen($haystack, $encoding);
 
         return false !== $pos ? $offset + $pos : false;
     }
@@ -533,9 +547,12 @@ final class Mbstring
         }
 
         if (1 > $split_length = (int) $split_length) {
-            trigger_error('The length of each segment must be greater than zero', E_USER_WARNING);
+            if (80000 > \PHP_VERSION_ID) {
+                trigger_error('The length of each segment must be greater than zero', E_USER_WARNING);
+                return false;
+            }
 
-            return false;
+            throw new \ValueError('Argument #2 ($length) must be greater than 0');
         }
 
         if (null === $encoding) {
@@ -575,11 +592,17 @@ final class Mbstring
 
     public static function mb_substitute_character($c = null)
     {
+        if (null === $c) {
+            return 'none';
+        }
         if (0 === strcasecmp($c, 'none')) {
             return true;
         }
+        if (80000 > \PHP_VERSION_ID) {
+            return false;
+        }
 
-        return null !== $c ? false : 'none';
+        throw new \ValueError('Argument #1 ($substitute_character) must be "none", "long", "entity" or a valid codepoint');
     }
 
     public static function mb_substr($s, $start, $length = null, $encoding = null)
