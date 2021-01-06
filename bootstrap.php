@@ -11,7 +11,7 @@
 
 use Symfony\Polyfill\Mbstring as p;
 
-if (PHP_VERSION_ID >= 80000) {
+if (\PHP_VERSION_ID >= 80000) {
     return require __DIR__.'/bootstrap80.php';
 }
 
@@ -55,7 +55,7 @@ if (!function_exists('mb_detect_order')) {
     function mb_detect_order($encoding = null) { return p\Mbstring::mb_detect_order($encoding); }
 }
 if (!function_exists('mb_parse_str')) {
-    function mb_parse_str($string, &$result = array()) { parse_str($string, $result); }
+    function mb_parse_str($string, &$result = []) { parse_str($string, $result); }
 }
 if (!function_exists('mb_strlen')) {
     function mb_strlen($string, $encoding = null) { return p\Mbstring::mb_strlen($string, $encoding); }

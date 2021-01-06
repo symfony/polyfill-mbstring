@@ -67,15 +67,15 @@ namespace Symfony\Polyfill\Mbstring;
  */
 final class Mbstring
 {
-    const MB_CASE_FOLD = PHP_INT_MAX;
+    public const MB_CASE_FOLD = \PHP_INT_MAX;
 
-    private static $encodingList = array('ASCII', 'UTF-8');
+    private static $encodingList = ['ASCII', 'UTF-8'];
     private static $language = 'neutral';
     private static $internalEncoding = 'UTF-8';
-    private static $caseFold = array(
-        array('µ', 'ſ', "\xCD\x85", 'ς', "\xCF\x90", "\xCF\x91", "\xCF\x95", "\xCF\x96", "\xCF\xB0", "\xCF\xB1", "\xCF\xB5", "\xE1\xBA\x9B", "\xE1\xBE\xBE"),
-        array('μ', 's', 'ι',        'σ', 'β',        'θ',        'φ',        'π',        'κ',        'ρ',        'ε',        "\xE1\xB9\xA1", 'ι'),
-    );
+    private static $caseFold = [
+        ['µ', 'ſ', "\xCD\x85", 'ς', "\xCF\x90", "\xCF\x91", "\xCF\x95", "\xCF\x96", "\xCF\xB0", "\xCF\xB1", "\xCF\xB5", "\xE1\xBA\x9B", "\xE1\xBE\xBE"],
+        ['μ', 's', 'ι',        'σ', 'β',        'θ',        'φ',        'π',        'κ',        'ρ',        'ε',        "\xE1\xB9\xA1", 'ι'],
+    ];
 
     public static function mb_convert_encoding($s, $toEncoding, $fromEncoding = null)
     {
@@ -104,11 +104,11 @@ final class Mbstring
                 $s = iconv($fromEncoding, 'UTF-8//IGNORE', $s);
             }
 
-            return preg_replace_callback('/[\x80-\xFF]+/', array(__CLASS__, 'html_encoding_callback'), $s);
+            return preg_replace_callback('/[\x80-\xFF]+/', [__CLASS__, 'html_encoding_callback'], $s);
         }
 
         if ('HTML-ENTITIES' === $fromEncoding) {
-            $s = html_entity_decode($s, ENT_COMPAT, 'UTF-8');
+            $s = html_entity_decode($s, \ENT_COMPAT, 'UTF-8');
             $fromEncoding = 'UTF-8';
         }
 
@@ -119,7 +119,7 @@ final class Mbstring
     {
         $ok = true;
         array_walk_recursive($vars, function (&$v) use (&$ok, $toEncoding, $fromEncoding) {
-            if (false === $v = Mbstring::mb_convert_encoding($v, $toEncoding, $fromEncoding)) {
+            if (false === $v = self::mb_convert_encoding($v, $toEncoding, $fromEncoding)) {
                 $ok = false;
             }
         });
@@ -134,13 +134,13 @@ final class Mbstring
 
     public static function mb_encode_mimeheader($s, $charset = null, $transferEncoding = null, $linefeed = null, $indent = null)
     {
-        trigger_error('mb_encode_mimeheader() is bugged. Please use iconv_mime_encode() instead', E_USER_WARNING);
+        trigger_error('mb_encode_mimeheader() is bugged. Please use iconv_mime_encode() instead', \E_USER_WARNING);
     }
 
     public static function mb_decode_numericentity($s, $convmap, $encoding = null)
     {
-        if (null !== $s && !\is_scalar($s) && !(\is_object($s) && \method_exists($s, '__toString'))) {
-            trigger_error('mb_decode_numericentity() expects parameter 1 to be string, '.\gettype($s).' given', E_USER_WARNING);
+        if (null !== $s && !is_scalar($s) && !(\is_object($s) && method_exists($s, '__toString'))) {
+            trigger_error('mb_decode_numericentity() expects parameter 1 to be string, '.\gettype($s).' given', \E_USER_WARNING);
 
             return null;
         }
@@ -149,8 +149,8 @@ final class Mbstring
             return false;
         }
 
-        if (null !== $encoding && !\is_scalar($encoding)) {
-            trigger_error('mb_decode_numericentity() expects parameter 3 to be string, '.\gettype($s).' given', E_USER_WARNING);
+        if (null !== $encoding && !is_scalar($encoding)) {
+            trigger_error('mb_decode_numericentity() expects parameter 3 to be string, '.\gettype($s).' given', \E_USER_WARNING);
 
             return '';  // Instead of null (cf. mb_encode_numericentity).
         }
@@ -183,7 +183,7 @@ final class Mbstring
             $c = isset($m[2]) ? (int) hexdec($m[2]) : $m[1];
             for ($i = 0; $i < $cnt; $i += 4) {
                 if ($c >= $convmap[$i] && $c <= $convmap[$i + 1]) {
-                    return Mbstring::mb_chr($c - $convmap[$i + 2]);
+                    return self::mb_chr($c - $convmap[$i + 2]);
                 }
             }
 
@@ -199,8 +199,8 @@ final class Mbstring
 
     public static function mb_encode_numericentity($s, $convmap, $encoding = null, $is_hex = false)
     {
-        if (null !== $s && !\is_scalar($s) && !(\is_object($s) && \method_exists($s, '__toString'))) {
-            trigger_error('mb_encode_numericentity() expects parameter 1 to be string, '.\gettype($s).' given', E_USER_WARNING);
+        if (null !== $s && !is_scalar($s) && !(\is_object($s) && method_exists($s, '__toString'))) {
+            trigger_error('mb_encode_numericentity() expects parameter 1 to be string, '.\gettype($s).' given', \E_USER_WARNING);
 
             return null;
         }
@@ -209,14 +209,14 @@ final class Mbstring
             return false;
         }
 
-        if (null !== $encoding && !\is_scalar($encoding)) {
-            trigger_error('mb_encode_numericentity() expects parameter 3 to be string, '.\gettype($s).' given', E_USER_WARNING);
+        if (null !== $encoding && !is_scalar($encoding)) {
+            trigger_error('mb_encode_numericentity() expects parameter 3 to be string, '.\gettype($s).' given', \E_USER_WARNING);
 
             return null;  // Instead of '' (cf. mb_decode_numericentity).
         }
 
-        if (null !== $is_hex && !\is_scalar($is_hex)) {
-            trigger_error('mb_encode_numericentity() expects parameter 4 to be boolean, '.\gettype($s).' given', E_USER_WARNING);
+        if (null !== $is_hex && !is_scalar($is_hex)) {
+            trigger_error('mb_encode_numericentity() expects parameter 4 to be boolean, '.\gettype($s).' given', \E_USER_WARNING);
 
             return null;
         }
@@ -237,7 +237,7 @@ final class Mbstring
             $s = iconv($encoding, 'UTF-8//IGNORE', $s);
         }
 
-        static $ulenMask = array("\xC0" => 2, "\xD0" => 2, "\xE0" => 3, "\xF0" => 4);
+        static $ulenMask = ["\xC0" => 2, "\xD0" => 2, "\xE0" => 3, "\xF0" => 4];
 
         $cnt = floor(\count($convmap) / 4) * 4;
         $i = 0;
@@ -285,14 +285,14 @@ final class Mbstring
             $s = iconv($encoding, 'UTF-8//IGNORE', $s);
         }
 
-        if (MB_CASE_TITLE == $mode) {
+        if (\MB_CASE_TITLE == $mode) {
             static $titleRegexp = null;
             if (null === $titleRegexp) {
                 $titleRegexp = self::getData('titleCaseRegexp');
             }
-            $s = preg_replace_callback($titleRegexp, array(__CLASS__, 'title_case'), $s);
+            $s = preg_replace_callback($titleRegexp, [__CLASS__, 'title_case'], $s);
         } else {
-            if (MB_CASE_UPPER == $mode) {
+            if (\MB_CASE_UPPER == $mode) {
                 static $upper = null;
                 if (null === $upper) {
                     $upper = self::getData('upperCase');
@@ -310,7 +310,7 @@ final class Mbstring
                 $map = $lower;
             }
 
-            static $ulenMask = array("\xC0" => 2, "\xD0" => 2, "\xE0" => 3, "\xF0" => 4);
+            static $ulenMask = ["\xC0" => 2, "\xD0" => 2, "\xE0" => 3, "\xF0" => 4];
 
             $i = 0;
             $len = \strlen($s);
@@ -389,7 +389,7 @@ final class Mbstring
 
     public static function mb_list_encodings()
     {
-        return array('UTF-8');
+        return ['UTF-8'];
     }
 
     public static function mb_encoding_aliases($encoding)
@@ -397,7 +397,7 @@ final class Mbstring
         switch (strtoupper($encoding)) {
             case 'UTF8':
             case 'UTF-8':
-                return array('utf8');
+                return ['utf8'];
         }
 
         return false;
@@ -412,7 +412,7 @@ final class Mbstring
             $encoding = self::$internalEncoding;
         }
 
-        return self::mb_detect_encoding($var, array($encoding)) || false !== @iconv($encoding, $encoding, $var);
+        return self::mb_detect_encoding($var, [$encoding]) || false !== @iconv($encoding, $encoding, $var);
     }
 
     public static function mb_detect_encoding($str, $encodingList = null, $strict = false)
@@ -500,7 +500,7 @@ final class Mbstring
         $needle = (string) $needle;
         if ('' === $needle) {
             if (80000 > \PHP_VERSION_ID) {
-                trigger_error(__METHOD__.': Empty delimiter', E_USER_WARNING);
+                trigger_error(__METHOD__.': Empty delimiter', \E_USER_WARNING);
 
                 return false;
             }
@@ -531,7 +531,7 @@ final class Mbstring
             }
         }
 
-        $pos = $needle !== '' || 80000 > \PHP_VERSION_ID
+        $pos = '' !== $needle || 80000 > \PHP_VERSION_ID
             ? iconv_strrpos($haystack, $needle, $encoding)
             : self::mb_strlen($haystack, $encoding);
 
@@ -540,15 +540,15 @@ final class Mbstring
 
     public static function mb_str_split($string, $split_length = 1, $encoding = null)
     {
-        if (null !== $string && !\is_scalar($string) && !(\is_object($string) && \method_exists($string, '__toString'))) {
-            trigger_error('mb_str_split() expects parameter 1 to be string, '.\gettype($string).' given', E_USER_WARNING);
+        if (null !== $string && !is_scalar($string) && !(\is_object($string) && method_exists($string, '__toString'))) {
+            trigger_error('mb_str_split() expects parameter 1 to be string, '.\gettype($string).' given', \E_USER_WARNING);
 
             return null;
         }
 
         if (1 > $split_length = (int) $split_length) {
             if (80000 > \PHP_VERSION_ID) {
-                trigger_error('The length of each segment must be greater than zero', E_USER_WARNING);
+                trigger_error('The length of each segment must be greater than zero', \E_USER_WARNING);
                 return false;
             }
 
@@ -567,10 +567,10 @@ final class Mbstring
             }
             $rx .= '.{'.$split_length.'})/us';
 
-            return preg_split($rx, $string, null, PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_NO_EMPTY);
+            return preg_split($rx, $string, null, \PREG_SPLIT_DELIM_CAPTURE | \PREG_SPLIT_NO_EMPTY);
         }
 
-        $result = array();
+        $result = [];
         $length = mb_strlen($string, $encoding);
 
         for ($i = 0; $i < $length; $i += $split_length) {
@@ -582,12 +582,12 @@ final class Mbstring
 
     public static function mb_strtolower($s, $encoding = null)
     {
-        return self::mb_convert_case($s, MB_CASE_LOWER, $encoding);
+        return self::mb_convert_case($s, \MB_CASE_LOWER, $encoding);
     }
 
     public static function mb_strtoupper($s, $encoding = null)
     {
-        return self::mb_convert_case($s, MB_CASE_UPPER, $encoding);
+        return self::mb_convert_case($s, \MB_CASE_UPPER, $encoding);
     }
 
     public static function mb_substitute_character($c = null)
@@ -690,7 +690,7 @@ final class Mbstring
 
     public static function mb_get_info($type = 'all')
     {
-        $info = array(
+        $info = [
             'internal_encoding' => self::$internalEncoding,
             'http_output' => 'pass',
             'http_output_conv_mimetypes' => '^(text/|application/xhtml\+xml)',
@@ -705,7 +705,7 @@ final class Mbstring
             'detect_order' => self::$encodingList,
             'substitute_character' => 'none',
             'strict_detection' => 'Off',
-        );
+        ];
 
         if ('all' === $type) {
             return $info;
@@ -809,7 +809,7 @@ final class Mbstring
     {
         $i = 1;
         $entities = '';
-        $m = unpack('C*', htmlentities($m[0], ENT_COMPAT, 'UTF-8'));
+        $m = unpack('C*', htmlentities($m[0], \ENT_COMPAT, 'UTF-8'));
 
         while (isset($m[$i])) {
             if (0x80 > $m[$i]) {
@@ -832,7 +832,7 @@ final class Mbstring
 
     private static function title_case(array $s)
     {
-        return self::mb_convert_case($s[1], MB_CASE_UPPER, 'UTF-8').self::mb_convert_case($s[2], MB_CASE_LOWER, 'UTF-8');
+        return self::mb_convert_case($s[1], \MB_CASE_UPPER, 'UTF-8').self::mb_convert_case($s[2], \MB_CASE_LOWER, 'UTF-8');
     }
 
     private static function getData($file)
