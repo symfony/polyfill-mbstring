@@ -51,7 +51,7 @@ if (!function_exists('mb_detect_order')) {
     function mb_detect_order(array|string|null $encoding = null): array|bool { return p\Mbstring::mb_detect_order((string) $encoding); }
 }
 if (!function_exists('mb_parse_str')) {
-    function mb_parse_str(?string $string, &$result = []): bool { parse_str((string) $string, $result); }
+    function mb_parse_str(?string $string, &$result = []): bool { parse_str((string) $string, $result); return (bool) $result; }
 }
 if (!function_exists('mb_strlen')) {
     function mb_strlen(?string $string, ?string $encoding = null): int { return p\Mbstring::mb_strlen((string) $string, $encoding); }
