@@ -602,6 +602,9 @@ final class Mbstring
         if (80000 > \PHP_VERSION_ID) {
             return false;
         }
+        if (\is_int($c) || 'long' === $c || 'entity' === $c) {
+            return false;
+        }
 
         throw new \ValueError('Argument #1 ($substitute_character) must be "none", "long", "entity" or a valid codepoint');
     }
