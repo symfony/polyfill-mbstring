@@ -406,6 +406,12 @@ final class Mbstring
 
     public static function mb_check_encoding($var = null, $encoding = null)
     {
+        if (PHP_VERSION_ID < 70200 && \is_array($var)) {
+            trigger_error('mb_check_encoding() expects parameter 1 to be string, array given', \E_USER_WARNING);
+
+            return null;
+        }
+
         if (null === $encoding) {
             if (null === $var) {
                 return false;
@@ -413,7 +419,21 @@ final class Mbstring
             $encoding = self::$internalEncoding;
         }
 
-        return self::mb_detect_encoding($var, [$encoding]) || false !== @iconv($encoding, $encoding, $var);
+        if (!\is_array($var)) {
+            return self::mb_detect_encoding($var, [$encoding]) || false !== @iconv($encoding, $encoding, $var);
+        }
+
+        foreach ($var as $key => $value) {
+            if (!self::mb_check_encoding($key, $encoding)) {
+                return false;
+            }
+            if (!self::mb_check_encoding($value, $encoding)) {
+                return false;
+            }
+        }
+
+        return true;
+
     }
 
     public static function mb_detect_encoding($str, $encodingList = null, $strict = false)
