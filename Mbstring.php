@@ -69,7 +69,7 @@ final class Mbstring
 {
     public const MB_CASE_FOLD = \PHP_INT_MAX;
 
-    private const CASE_FOLD = [
+    private const SIMPLE_CASE_FOLD = [
         ['µ', 'ſ', "\xCD\x85", 'ς', "\xCF\x90", "\xCF\x91", "\xCF\x95", "\xCF\x96", "\xCF\xB0", "\xCF\xB1", "\xCF\xB5", "\xE1\xBA\x9B", "\xE1\xBE\xBE"],
         ['μ', 's', 'ι',        'σ', 'β',        'θ',        'φ',        'π',        'κ',        'ρ',        'ε',        "\xE1\xB9\xA1", 'ι'],
     ];
@@ -301,7 +301,11 @@ final class Mbstring
                 $map = $upper;
             } else {
                 if (self::MB_CASE_FOLD === $mode) {
-                    $s = str_replace(self::CASE_FOLD[0], self::CASE_FOLD[1], $s);
+                    static $caseFolding = null;
+                    if (null === $caseFolding) {
+                        $caseFolding = self::getData('caseFolding');
+                    }
+                    $s = strtr($s, $caseFolding);
                 }
 
                 static $lower = null;
@@ -638,8 +642,10 @@ final class Mbstring
 
     public static function mb_stripos($haystack, $needle, $offset = 0, $encoding = null)
     {
-        $haystack = self::mb_convert_case($haystack, self::MB_CASE_FOLD, $encoding);
-        $needle = self::mb_convert_case($needle, self::MB_CASE_FOLD, $encoding);
+        [$haystack, $needle] = str_replace(self::SIMPLE_CASE_FOLD[0], self::SIMPLE_CASE_FOLD[1], [
+            self::mb_convert_case($haystack, \MB_CASE_LOWER, $encoding),
+            self::mb_convert_case($needle, \MB_CASE_LOWER, $encoding),
+        ]);
 
         return self::mb_strpos($haystack, $needle, $offset, $encoding);
     }
@@ -674,8 +680,11 @@ final class Mbstring
 
     public static function mb_strripos($haystack, $needle, $offset = 0, $encoding = null)
     {
-        $haystack = self::mb_convert_case($haystack, self::MB_CASE_FOLD, $encoding);
-        $needle = self::mb_convert_case($needle, self::MB_CASE_FOLD, $encoding);
+        $haystack = self::mb_convert_case($haystack, \MB_CASE_LOWER, $encoding);
+        $needle = self::mb_convert_case($needle, \MB_CASE_LOWER, $encoding);
+
+        $haystack = str_replace(self::SIMPLE_CASE_FOLD[0], self::SIMPLE_CASE_FOLD[1], $haystack);
+        $needle = str_replace(self::SIMPLE_CASE_FOLD[0], self::SIMPLE_CASE_FOLD[1], $needle);
 
         return self::mb_strrpos($haystack, $needle, $offset, $encoding);
     }
