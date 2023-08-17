@@ -582,7 +582,7 @@ final class Mbstring
         }
 
         if (null === $encoding) {
-            $encoding = mb_internal_encoding();
+            $encoding = self::mb_internal_encoding();
         }
 
         if ('UTF-8' === $encoding = self::getEncoding($encoding)) {
@@ -597,10 +597,10 @@ final class Mbstring
         }
 
         $result = [];
-        $length = mb_strlen($string, $encoding);
+        $length = self::mb_strlen($string, $encoding);
 
         for ($i = 0; $i < $length; $i += $split_length) {
-            $result[] = mb_substr($string, $i, $split_length, $encoding);
+            $result[] = self::mb_substr($string, $i, $split_length, $encoding);
         }
 
         return $result;
