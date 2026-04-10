@@ -133,7 +133,7 @@ final class Mbstring
     public static function mb_convert_variables($toEncoding, $fromEncoding, &...$vars)
     {
         $ok = true;
-        array_walk_recursive($vars, function (&$v) use (&$ok, $toEncoding, $fromEncoding) {
+        array_walk_recursive($vars, static function (&$v) use (&$ok, $toEncoding, $fromEncoding) {
             if (false === $v = self::mb_convert_encoding($v, $toEncoding, $fromEncoding)) {
                 $ok = false;
             }
@@ -194,7 +194,7 @@ final class Mbstring
             $convmap[$i + 1] += $convmap[$i + 2];
         }
 
-        $s = preg_replace_callback('/&#(?:0*([0-9]+)|x0*([0-9a-fA-F]+))(?!&);?/', function (array $m) use ($cnt, $convmap) {
+        $s = preg_replace_callback('/&#(?:0*([0-9]+)|x0*([0-9a-fA-F]+))(?!&);?/', static function (array $m) use ($cnt, $convmap) {
             $c = isset($m[2]) ? (int) hexdec($m[2]) : $m[1];
             for ($i = 0; $i < $cnt; $i += 4) {
                 if ($c >= $convmap[$i] && $c <= $convmap[$i + 1]) {
@@ -268,7 +268,7 @@ final class Mbstring
             for ($j = 0; $j < $cnt; $j += 4) {
                 if ($c >= $convmap[$j] && $c <= $convmap[$j + 1]) {
                     $cOffset = ($c + $convmap[$j + 2]) & $convmap[$j + 3];
-                    $result .= $is_hex ? sprintf('&#x%X;', $cOffset) : '&#'.$cOffset.';';
+                    $result .= $is_hex ? \sprintf('&#x%X;', $cOffset) : '&#'.$cOffset.';';
                     continue 2;
                 }
             }
@@ -382,7 +382,7 @@ final class Mbstring
             return false;
         }
 
-        throw new \ValueError(sprintf('Argument #1 ($encoding) must be a valid encoding, "%s" given', $encoding));
+        throw new \ValueError(\sprintf('Argument #1 ($encoding) must be a valid encoding, "%s" given', $encoding));
     }
 
     public static function mb_language($lang = null)
@@ -403,7 +403,7 @@ final class Mbstring
             return false;
         }
 
-        throw new \ValueError(sprintf('Argument #1 ($language) must be a valid language, "%s" given', $lang));
+        throw new \ValueError(\sprintf('Argument #1 ($language) must be a valid language, "%s" given', $lang));
     }
 
     public static function mb_list_encodings()
@@ -1020,7 +1020,7 @@ final class Mbstring
             $characters = preg_quote($characters);
         }
 
-        $string = preg_replace(sprintf($regex, $characters), '', $string);
+        $string = preg_replace(\sprintf($regex, $characters), '', $string);
 
         if (null === $encoding) {
             return $string;
@@ -1034,12 +1034,12 @@ final class Mbstring
         try {
             $validEncoding = @self::mb_check_encoding('', $encoding);
         } catch (\ValueError $e) {
-            throw new \ValueError(sprintf($errorFormat, $encoding));
+            throw new \ValueError(\sprintf($errorFormat, $encoding));
         }
 
         // BC for PHP 7.3 and lower
         if (!$validEncoding) {
-            throw new \ValueError(sprintf($errorFormat, $encoding));
+            throw new \ValueError(\sprintf($errorFormat, $encoding));
         }
     }
 }

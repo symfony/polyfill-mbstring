@@ -156,7 +156,6 @@ if (!function_exists('mb_rtrim')) {
     function mb_rtrim(string $string, ?string $characters = null, ?string $encoding = null): string { return p\Mbstring::mb_rtrim($string, $characters, $encoding); }
 }
 
-
 if (extension_loaded('mbstring')) {
     return;
 }
