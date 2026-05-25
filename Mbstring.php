@@ -519,7 +519,15 @@ final class Mbstring
             return \strlen($s);
         }
 
-        return @iconv_strlen($s, $encoding);
+        if (false !== $len = @iconv_strlen($s, $encoding)) {
+            return $len;
+        }
+
+        if ('UTF-8' !== $encoding) {
+            return $len;
+        }
+
+        return preg_match_all('/[\x00-\x7F]|[\xC0-\xDF][\x80-\xBF]?|[\xE0-\xEF][\x80-\xBF]{0,2}|[\xF0-\xF7][\x80-\xBF]{0,3}|[\xF8-\xFB][\x80-\xBF]{0,4}|[\xFC-\xFD][\x80-\xBF]{0,5}|[\x80-\xBF\xFE\xFF]/s', $s);
     }
 
     public static function mb_strpos($haystack, $needle, $offset = 0, $encoding = null)
