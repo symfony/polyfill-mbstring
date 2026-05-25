@@ -123,8 +123,41 @@ final class Mbstring
         }
 
         if ('HTML-ENTITIES' === $fromEncoding) {
-            $s = html_entity_decode($s, \ENT_COMPAT, 'UTF-8');
+            $decodeControlChars = static function ($m) {
+                $code = '' !== ($m[2] ?? '') ? hexdec($m[2]) : (int) $m[1];
+
+                if ($code < 32 || 127 === $code) {
+                    return \chr($code);
+                }
+                if (128 <= $code && $code <= 159) {
+                    return "\xC2".\chr(0x80 | ($code & 0x3F));
+                }
+
+                return $m[0];
+            };
+
+            if (\PHP_VERSION_ID >= 70400) {
+                $s = html_entity_decode($s, \ENT_QUOTES, 'UTF-8');
+                // html_entity_decode() leaves numeric entities for C0/C1 control
+                // characters as-is (HTML spec), but mb_convert_encoding() decodes
+                // them. Catch what html_entity_decode() missed.
+                if (false !== strpos($s, '&#')) {
+                    $s = preg_replace_callback('/&#(?:0*([0-9]++)|[xX]0*([0-9a-fA-F]++));/', $decodeControlChars, $s);
+                }
+            } else {
+                // PHP < 7.4: html_entity_decode() truncates strings at NUL bytes,
+                // so decode the control character entities first then call
+                // html_entity_decode() on each NUL-delimited chunk independently.
+                $s = preg_replace_callback('/&#(?:0*([0-9]++)|[xX]0*([0-9a-fA-F]++));/', $decodeControlChars, $s);
+                $s = implode("\0", array_map(static function ($chunk) {
+                    return html_entity_decode($chunk, \ENT_QUOTES, 'UTF-8');
+                }, explode("\0", $s)));
+            }
             $fromEncoding = 'UTF-8';
+        }
+
+        if ($fromEncoding === $toEncoding) {
+            return $s;
         }
 
         return iconv($fromEncoding, $toEncoding.'//IGNORE', $s);
