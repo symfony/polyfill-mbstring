@@ -879,16 +879,6 @@ final class Mbstring
     /** @return string|false */
     public static function mb_str_pad(string $string, int $length, string $pad_string = ' ', int $pad_type = \STR_PAD_RIGHT, ?string $encoding = null)
     {
-        if (!\in_array($pad_type, [\STR_PAD_RIGHT, \STR_PAD_LEFT, \STR_PAD_BOTH], true)) {
-            if (\PHP_VERSION_ID < 80000) {
-                trigger_error('mb_str_pad(): Argument #4 ($pad_type) must be STR_PAD_LEFT, STR_PAD_RIGHT, or STR_PAD_BOTH', \E_USER_WARNING);
-
-                return false;
-            }
-
-            throw new \ValueError('mb_str_pad(): Argument #4 ($pad_type) must be STR_PAD_LEFT, STR_PAD_RIGHT, or STR_PAD_BOTH');
-        }
-
         if (null === $encoding) {
             $encoding = self::mb_internal_encoding();
         } elseif (!self::assertEncoding($encoding, 'mb_str_pad(): Argument #5 ($encoding) must be a valid encoding, "%s" given')) {
@@ -903,6 +893,16 @@ final class Mbstring
             }
 
             throw new \ValueError('mb_str_pad(): Argument #3 ($pad_string) must be a non-empty string');
+        }
+
+        if (!\in_array($pad_type, [\STR_PAD_RIGHT, \STR_PAD_LEFT, \STR_PAD_BOTH], true)) {
+            if (\PHP_VERSION_ID < 80000) {
+                trigger_error('mb_str_pad(): Argument #4 ($pad_type) must be STR_PAD_LEFT, STR_PAD_RIGHT, or STR_PAD_BOTH', \E_USER_WARNING);
+
+                return false;
+            }
+
+            throw new \ValueError('mb_str_pad(): Argument #4 ($pad_type) must be STR_PAD_LEFT, STR_PAD_RIGHT, or STR_PAD_BOTH');
         }
 
         $paddingRequired = $length - self::mb_strlen($string, $encoding);
