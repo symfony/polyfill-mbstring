@@ -157,10 +157,6 @@ final class Mbstring
             $fromEncoding = 'UTF-8';
         }
 
-        if ($fromEncoding === $toEncoding) {
-            return $s;
-        }
-
         return self::iconv($fromEncoding, $toEncoding, $s);
     }
 
@@ -874,6 +870,18 @@ final class Mbstring
         }
 
         return $code;
+    }
+
+    /** @return string|false */
+    public static function mb_scrub(?string $string, ?string $encoding = null): string
+    {
+        if (null === $encoding) {
+            $encoding = self::mb_internal_encoding();
+        } elseif (!self::assertEncoding($encoding, 'mb_scrub(): Argument #2 ($encoding) must be a valid encoding, "%s" given')) {
+            return false;
+        }
+
+        return self::mb_convert_encoding((string) $string, $encoding, $encoding);
     }
 
     /** @return string|false */
