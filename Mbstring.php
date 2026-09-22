@@ -974,7 +974,7 @@ final class Mbstring
             return false;
         }
 
-        if (self::mb_strlen($pad_string, $encoding) <= 0) {
+        if (0 >= $padStringLength = self::mb_strlen($pad_string, $encoding)) {
             if (\PHP_VERSION_ID < 80000) {
                 trigger_error('mb_str_pad(): Argument #3 ($pad_string) must be a non-empty string', \E_USER_WARNING);
 
@@ -1000,16 +1000,18 @@ final class Mbstring
             return $string;
         }
 
+        $pad_string = str_repeat($pad_string, 1 + intdiv($paddingRequired - 1, $padStringLength));
+
         switch ($pad_type) {
             case \STR_PAD_LEFT:
-                return self::mb_substr(str_repeat($pad_string, $paddingRequired), 0, $paddingRequired, $encoding).$string;
+                return self::mb_substr($pad_string, 0, $paddingRequired, $encoding).$string;
             case \STR_PAD_RIGHT:
-                return $string.self::mb_substr(str_repeat($pad_string, $paddingRequired), 0, $paddingRequired, $encoding);
+                return $string.self::mb_substr($pad_string, 0, $paddingRequired, $encoding);
             default:
                 $leftPaddingLength = floor($paddingRequired / 2);
                 $rightPaddingLength = $paddingRequired - $leftPaddingLength;
 
-                return self::mb_substr(str_repeat($pad_string, $leftPaddingLength), 0, $leftPaddingLength, $encoding).$string.self::mb_substr(str_repeat($pad_string, $rightPaddingLength), 0, $rightPaddingLength, $encoding);
+                return self::mb_substr($pad_string, 0, $leftPaddingLength, $encoding).$string.self::mb_substr($pad_string, 0, $rightPaddingLength, $encoding);
         }
     }
 
