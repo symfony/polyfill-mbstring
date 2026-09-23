@@ -74,7 +74,6 @@ final class Mbstring
 {
     public const MB_CASE_FOLD = \PHP_INT_MAX;
 
-    private const MB_STR_SPLIT_MAX_LENGTH = 0x3FFFFFFF;
     private const SIMPLE_CASE_FOLD = [
         ['µ', 'ſ', "\xCD\x85", 'ς', "\xCF\x90", "\xCF\x91", "\xCF\x95", "\xCF\x96", "\xCF\xB0", "\xCF\xB1", "\xCF\xB5", "\xE1\xBA\x9B", "\xE1\xBE\xBE"],
         ['μ', 's', 'ι',        'σ', 'β',        'θ',        'φ',        'π',        'κ',        'ρ',        'ε',        "\xE1\xB9\xA1", 'ι'],
@@ -666,13 +665,7 @@ final class Mbstring
             throw new \ValueError('Argument #2 ($length) must be greater than 0');
         }
 
-        if (self::MB_STR_SPLIT_MAX_LENGTH < $split_length) {
-            if (80000 > \PHP_VERSION_ID) {
-                trigger_error('The length of each segment is too large', \E_USER_WARNING);
-
-                return false;
-            }
-
+        if (80300 <= \PHP_VERSION_ID && 0x3FFFFFFF < $split_length) {
             throw new \ValueError('Argument #2 ($length) is too large');
         }
 
@@ -681,6 +674,12 @@ final class Mbstring
         }
 
         if ('UTF-8' === $encoding = self::getEncoding($encoding)) {
+            $string = (string) $string;
+
+            if (\strlen($string) <= $split_length) {
+                return '' === $string ? [] : [$string];
+            }
+
             $rx = '/(';
             while (65535 < $split_length) {
                 $rx .= '.{65535}';
