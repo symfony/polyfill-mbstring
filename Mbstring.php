@@ -685,7 +685,7 @@ final class Mbstring
                 $rx .= '.{65535}';
                 $split_length -= 65535;
             }
-            $rx .= '.{'.$split_length.'})/us';
+            $rx .= '.{'.$split_length.'})/Aus';
 
             return preg_split($rx, $string, -1, \PREG_SPLIT_DELIM_CAPTURE | \PREG_SPLIT_NO_EMPTY);
         }
