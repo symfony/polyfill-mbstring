@@ -1189,8 +1189,12 @@ final class Mbstring
                     return $string;
                 }
 
-                // The substitute character is "none" with this polyfill
-                return implode('', array_diff_key($units[0], $units[1]));
+                if ('none' === mb_substitute_character()) {
+                    return implode('', array_diff_key($units[0], $units[1]));
+                }
+
+                // Only mbstring lets the substitute character be something else
+                return mb_convert_encoding(implode('', $units[0]), 'UTF-8', 'UTF-8');
             }
         } else {
             $string = self::iconv($encoding, 'UTF-8', $string);
