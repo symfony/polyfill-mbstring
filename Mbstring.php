@@ -1000,19 +1000,22 @@ final class Mbstring
             return $string;
         }
 
-        $pad_string = str_repeat($pad_string, 1 + intdiv($paddingRequired - 1, $padStringLength));
-
         switch ($pad_type) {
             case \STR_PAD_LEFT:
-                return self::mb_substr($pad_string, 0, $paddingRequired, $encoding).$string;
+                $leftPaddingLength = $paddingRequired;
+                break;
             case \STR_PAD_RIGHT:
-                return $string.self::mb_substr($pad_string, 0, $paddingRequired, $encoding);
+                $leftPaddingLength = 0;
+                break;
             default:
-                $leftPaddingLength = floor($paddingRequired / 2);
-                $rightPaddingLength = $paddingRequired - $leftPaddingLength;
-
-                return self::mb_substr($pad_string, 0, $leftPaddingLength, $encoding).$string.self::mb_substr($pad_string, 0, $rightPaddingLength, $encoding);
+                $leftPaddingLength = intdiv($paddingRequired, 2);
         }
+
+        $rightPaddingLength = $paddingRequired - $leftPaddingLength;
+
+        return str_repeat($pad_string, intdiv($leftPaddingLength, $padStringLength)).self::mb_substr($pad_string, 0, $leftPaddingLength % $padStringLength, $encoding)
+            .$string
+            .str_repeat($pad_string, intdiv($rightPaddingLength, $padStringLength)).self::mb_substr($pad_string, 0, $rightPaddingLength % $padStringLength, $encoding);
     }
 
     /** @return string|false */
