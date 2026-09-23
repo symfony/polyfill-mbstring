@@ -322,7 +322,12 @@ final class Mbstring
             $ulen = $s[$i] < "\x80" ? 1 : $ulenMask[$s[$i] & "\xF0"] ?? 1;
             $uchr = substr($s, $i, $ulen);
             $i += $ulen;
-            $c = self::mb_ord($uchr);
+
+            // code points above U+10FFFF are outside any convmap, but mb_ord() rejects them
+            if (false === $c = self::mb_ord($uchr)) {
+                $result .= $uchr;
+                continue;
+            }
 
             for ($j = 0; $j < $cnt; $j += 4) {
                 if ($c >= $convmap[$j] && $c <= $convmap[$j + 1]) {
