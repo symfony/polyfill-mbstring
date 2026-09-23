@@ -1182,7 +1182,7 @@ final class Mbstring
             return $string;
         }
 
-        if ('UTF-8' === $encoding) {
+        if ('UTF-8' === self::getEncoding($encoding)) {
             $encoding = null;
             if (!preg_match('//u', $string) || (null !== $characters && !preg_match('//u', $characters))) {
                 if (null === $units = self::mb_trim_invalid_utf8($string, $characters, $function)) {
