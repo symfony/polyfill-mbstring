@@ -79,6 +79,34 @@ final class Mbstring
         ['μ', 's', 'ι',        'σ', 'β',        'θ',        'φ',        'π',        'κ',        'ρ',        'ε',        "\xE1\xB9\xA1", 'ι'],
     ];
 
+    // Encodings rejected by mb_ord() and mb_chr(), with their aliases
+    private const UNSUPPORTED_CODEPOINT_ENCODINGS = [
+        'BASE64' => 'BASE64',
+        'UUENCODE' => 'UUENCODE',
+        'X-UUENCODE' => 'UUENCODE',
+        'HTML-ENTITIES' => 'HTML-ENTITIES',
+        'HTML' => 'HTML-ENTITIES',
+        'QUOTED-PRINTABLE' => 'Quoted-Printable',
+        'QPRINT' => 'Quoted-Printable',
+        'UTF-7' => 'UTF-7',
+        'UTF7' => 'UTF-7',
+        'UTF7-IMAP' => 'UTF7-IMAP',
+        'MUTF-7' => 'UTF7-IMAP',
+        'JIS' => 'JIS',
+        'ISO-2022-JP' => 'ISO-2022-JP',
+        'ISO-2022-JP-2004' => 'ISO-2022-JP-2004',
+        'ISO-2022-JP-MOBILE#KDDI' => 'ISO-2022-JP-MOBILE#KDDI',
+        'ISO-2022-JP-KDDI' => 'ISO-2022-JP-MOBILE#KDDI',
+        'ISO-2022-JP-MS' => 'ISO-2022-JP-MS',
+        'ISO2022JPMS' => 'ISO-2022-JP-MS',
+        'CP50220' => 'CP50220',
+        'CP50220RAW' => 'CP50220',
+        'CP50220-RAW' => 'CP50220',
+        'JIS-MS' => 'CP50220',
+        'CP50221' => 'CP50221',
+        'CP50222' => 'CP50222',
+    ];
+
     private static $encodingList = ['ASCII', 'UTF-8'];
     private static $language = 'neutral';
     private static $internalEncoding = 'UTF-8';
@@ -837,6 +865,10 @@ final class Mbstring
 
     public static function mb_chr($code, $encoding = null)
     {
+        if (null !== $encoding && !self::assertCodepointEncoding($encoding, 'mb_chr')) {
+            return false;
+        }
+
         if (0x80 > $code %= 0x200000) {
             $s = \chr($code);
         } elseif (0x800 > $code) {
@@ -856,6 +888,20 @@ final class Mbstring
 
     public static function mb_ord($s, $encoding = null)
     {
+        if ('' === (string) $s) {
+            if (80000 > \PHP_VERSION_ID) {
+                trigger_error('mb_ord(): Empty string', \E_USER_WARNING);
+
+                return false;
+            }
+
+            throw new \ValueError('mb_ord(): Argument #1 ($string) must not be empty');
+        }
+
+        if (null !== $encoding && !self::assertCodepointEncoding($encoding, 'mb_ord')) {
+            return false;
+        }
+
         if ('UTF-8' !== $encoding = self::getEncoding($encoding)) {
             $s = mb_convert_encoding($s, 'UTF-8', $encoding);
         }
@@ -1140,5 +1186,32 @@ final class Mbstring
         }
 
         return $validEncoding;
+    }
+
+    private static function assertCodepointEncoding(string $encoding, string $function): bool
+    {
+        if (null !== $name = self::UNSUPPORTED_CODEPOINT_ENCODINGS[strtoupper($encoding)] ?? null) {
+            if (80000 > \PHP_VERSION_ID) {
+                trigger_error(\sprintf('%s(): Unsupported encoding "%s"', $function, $name), \E_USER_WARNING);
+
+                return false;
+            }
+
+            throw new \ValueError(\sprintf('%s() does not support the "%s" encoding', $function, $name));
+        }
+
+        $normalizedEncoding = self::getEncoding($encoding);
+
+        if ('UTF-8' === $normalizedEncoding || false !== @iconv($normalizedEncoding, $normalizedEncoding, '')) {
+            return true;
+        }
+
+        if (80000 > \PHP_VERSION_ID) {
+            trigger_error(\sprintf('%s(): Unknown encoding "%s"', $function, $encoding), \E_USER_WARNING);
+
+            return false;
+        }
+
+        throw new \ValueError(\sprintf('%s(): Argument #2 ($encoding) must be a valid encoding, "%s" given', $function, $encoding));
     }
 }
