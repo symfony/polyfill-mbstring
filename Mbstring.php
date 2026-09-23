@@ -1179,7 +1179,7 @@ final class Mbstring
         }
 
         if ('' === $characters) {
-            return null === $encoding ? $string : self::mb_convert_encoding($string, $encoding);
+            return $string;
         }
 
         if ('UTF-8' === $encoding) {
