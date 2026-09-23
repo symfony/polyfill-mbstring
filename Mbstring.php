@@ -276,7 +276,8 @@ final class Mbstring
         if ('UTF-8' === $encoding) {
             $encoding = null;
             if (!preg_match('//u', $s)) {
-                $s = @self::iconv('UTF-8', 'UTF-8', $s);
+                // glibc's iconv() keeps code points above U+10FFFF, encoded on 4 to 6 bytes
+                $s = preg_replace('/\xF4[\x90-\xBF][\x80-\xBF]*+|[\xF5-\xFF][\x80-\xBF]*+/', '', @self::iconv('UTF-8', 'UTF-8', $s));
             }
         } else {
             $s = self::iconv($encoding, 'UTF-8', $s);
@@ -290,7 +291,7 @@ final class Mbstring
         $result = '';
 
         while ($i < $len) {
-            $ulen = $s[$i] < "\x80" ? 1 : $ulenMask[$s[$i] & "\xF0"];
+            $ulen = $s[$i] < "\x80" ? 1 : $ulenMask[$s[$i] & "\xF0"] ?? 1;
             $uchr = substr($s, $i, $ulen);
             $i += $ulen;
             $c = self::mb_ord($uchr);
@@ -324,7 +325,8 @@ final class Mbstring
         if ('UTF-8' === $encoding) {
             $encoding = null;
             if (!preg_match('//u', $s)) {
-                $s = @self::iconv('UTF-8', 'UTF-8', $s);
+                // glibc's iconv() keeps code points above U+10FFFF, encoded on 4 to 6 bytes
+                $s = preg_replace('/\xF4[\x90-\xBF][\x80-\xBF]*+|[\xF5-\xFF][\x80-\xBF]*+/', '', @self::iconv('UTF-8', 'UTF-8', $s));
             }
         } else {
             $s = self::iconv($encoding, 'UTF-8', $s);
@@ -365,7 +367,7 @@ final class Mbstring
             $len = \strlen($s);
 
             while ($i < $len) {
-                $ulen = $s[$i] < "\x80" ? 1 : $ulenMask[$s[$i] & "\xF0"];
+                $ulen = $s[$i] < "\x80" ? 1 : $ulenMask[$s[$i] & "\xF0"] ?? 1;
                 $uchr = substr($s, $i, $ulen);
                 $i += $ulen;
 
