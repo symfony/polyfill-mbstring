@@ -462,6 +462,10 @@ final class Mbstring
         }
 
         if (!\is_array($var)) {
+            if ('UTF-8' === self::getEncoding($encoding)) {
+                return (bool) preg_match('//u', $var);
+            }
+
             return self::mb_detect_encoding($var, [$encoding]) || false !== @iconv($encoding, $encoding, $var);
         }
 
