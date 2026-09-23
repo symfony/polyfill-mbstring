@@ -1184,11 +1184,13 @@ final class Mbstring
 
         if ('UTF-8' === $encoding) {
             $encoding = null;
-            if (!preg_match('//u', $string)) {
-                $string = @self::iconv('UTF-8', 'UTF-8', $string);
-            }
-            if (null !== $characters && !preg_match('//u', $characters)) {
-                $characters = @self::iconv('UTF-8', 'UTF-8', $characters);
+            if (!preg_match('//u', $string) || (null !== $characters && !preg_match('//u', $characters))) {
+                if (null === $units = self::mb_trim_invalid_utf8($string, $characters, $function)) {
+                    return $string;
+                }
+
+                // The substitute character is "none" with this polyfill
+                return implode('', array_diff_key($units[0], $units[1]));
             }
         } else {
             $string = self::iconv($encoding, 'UTF-8', $string);
@@ -1211,6 +1213,45 @@ final class Mbstring
         }
 
         return self::iconv('UTF-8', $encoding, $string);
+    }
+
+    /**
+     * Trims like mbstring does when the input is not valid UTF-8: invalid sequences are
+     * trimmed only when $characters has one too, and null is returned when nothing is trimmed.
+     *
+     * @return array{string[], string[]}|null The remaining units, and the invalid ones among them
+     */
+    private static function mb_trim_invalid_utf8(string $string, ?string $characters, string $function): ?array
+    {
+        $split = static function (string $s): array {
+            // Characters, and maximal subparts of ill-formed sequences, in capture group 1
+            preg_match_all('/[\x00-\x7F]|[\xC2-\xDF][\x80-\xBF]|\xE0[\xA0-\xBF][\x80-\xBF]|[\xE1-\xEC\xEE\xEF][\x80-\xBF]{2}|\xED[\x80-\x9F][\x80-\xBF]|\xF0[\x90-\xBF][\x80-\xBF]{2}|[\xF1-\xF3][\x80-\xBF]{3}|\xF4[\x80-\x8F][\x80-\xBF]{2}|(\xE0[\xA0-\xBF]|[\xE1-\xEC\xEE\xEF][\x80-\xBF]|\xED[\x80-\x9F]|\xF0[\x90-\xBF][\x80-\xBF]?|[\xF1-\xF3][\x80-\xBF]{1,2}|\xF4[\x80-\x8F][\x80-\xBF]?|[\x80-\xFF])/', $s, $m);
+
+            return $m;
+        };
+
+        [$units, $invalid] = $split($string);
+        [$chars, $invalidChars] = $split($characters ?? "\0 \f\n\r\t\v\u{00A0}\u{1680}\u{2000}\u{2001}\u{2002}\u{2003}\u{2004}\u{2005}\u{2006}\u{2007}\u{2008}\u{2009}\u{200A}\u{2028}\u{2029}\u{202F}\u{205F}\u{3000}\u{0085}\u{180E}");
+        $trimInvalid = '' !== implode('', $invalidChars);
+        $chars = array_flip($chars);
+        $trim = static function (int $i) use ($units, $invalid, $chars, $trimInvalid): bool {
+            return '' !== $invalid[$i] ? $trimInvalid : isset($chars[$units[$i]]);
+        };
+
+        $start = 0;
+        $end = \count($units);
+        while ('mb_rtrim' !== $function && $start < $end && $trim($start)) {
+            ++$start;
+        }
+        while ('mb_ltrim' !== $function && $end > $start && $trim($end - 1)) {
+            --$end;
+        }
+
+        if (0 === $start && \count($units) === $end) {
+            return null;
+        }
+
+        return [\array_slice($units, $start, $end - $start), array_filter(\array_slice($invalid, $start, $end - $start), 'strlen')];
     }
 
     private static function assertEncoding(string $encoding, string $errorFormat): bool
