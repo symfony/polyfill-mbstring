@@ -107,20 +107,30 @@ final class Mbstring
         'CP50222' => 'CP50222',
     ];
 
+    // Well-formed characters in group 1, then the maximal subparts of ill-formed sequences
+    private const UTF8_CHAR_REGEX = '/([\x00-\x7F]|[\xC2-\xDF][\x80-\xBF]|\xE0[\xA0-\xBF][\x80-\xBF]|[\xE1-\xEC\xEE\xEF][\x80-\xBF]{2}|\xED[\x80-\x9F][\x80-\xBF]|\xF0[\x90-\xBF][\x80-\xBF]{2}|[\xF1-\xF3][\x80-\xBF]{3}|\xF4[\x80-\x8F][\x80-\xBF]{2})|\xE0[\xA0-\xBF]|[\xE1-\xEC\xEE\xEF][\x80-\xBF]|\xED[\x80-\x9F]|\xF0[\x90-\xBF][\x80-\xBF]?|[\xF1-\xF3][\x80-\xBF]{1,2}|\xF4[\x80-\x8F][\x80-\xBF]?|[\x80-\xFF]/';
+
     private static $encodingList = ['ASCII', 'UTF-8'];
     private static $language = 'neutral';
     private static $internalEncoding = 'UTF-8';
     private static $iconvSupportsIgnore;
+    private static $convertibleEncodings = ['UTF-8' => true];
 
     public static function mb_convert_encoding($s, $toEncoding, $fromEncoding = null)
     {
-        if (\is_array($s)) {
-            $r = [];
-            foreach ($s as $str) {
-                $r[] = self::mb_convert_encoding($str, $toEncoding, $fromEncoding);
-            }
+        if (\is_string($fromEncoding) && 2 < \strlen($fromEncoding) && '"' === $fromEncoding[0] && '"' === $fromEncoding[-1]) {
+            $fromEncoding = substr($fromEncoding, 1, -1);
+        }
 
-            return $r;
+        if (80000 <= \PHP_VERSION_ID
+            && (!isset(self::$convertibleEncodings[$toEncoding]) || (null !== $fromEncoding && !(\is_string($fromEncoding) && isset(self::$convertibleEncodings[$fromEncoding]))))
+            && null !== $error = self::getConversionError('mb_convert_encoding', 2, $toEncoding, $fromEncoding)
+        ) {
+            throw new \ValueError($error);
+        }
+
+        if (\is_array($s)) {
+            return self::convertArray($s, $toEncoding, $fromEncoding);
         }
 
         if (\is_array($fromEncoding) || (null !== $fromEncoding && false !== strpos($fromEncoding, ','))) {
@@ -146,6 +156,8 @@ final class Mbstring
             }
             if ('UTF-8' !== $fromEncoding) {
                 $s = self::iconv($fromEncoding, 'UTF-8', $s);
+            } elseif (!preg_match('//u', $s)) {
+                $s = self::scrubUtf8($s);
             }
 
             return preg_replace_callback('/[\x80-\xFF]+/', [__CLASS__, 'html_encoding_callback'], $s);
@@ -185,17 +197,42 @@ final class Mbstring
             $fromEncoding = 'UTF-8';
         }
 
+        if ('UTF-8' === $fromEncoding && !preg_match('//u', $s)) {
+            $s = self::scrubUtf8($s);
+        }
+
         return self::iconv($fromEncoding, $toEncoding, $s);
     }
 
     public static function mb_convert_variables($toEncoding, $fromEncoding, &...$vars)
     {
+        if (\is_string($fromEncoding) && 2 < \strlen($fromEncoding) && '"' === $fromEncoding[0] && '"' === $fromEncoding[-1]) {
+            $fromEncoding = substr($fromEncoding, 1, -1);
+        }
+
+        if (80000 <= \PHP_VERSION_ID && null !== $error = self::getConversionError('mb_convert_variables', 1, $toEncoding, $fromEncoding)) {
+            throw new \ValueError($error);
+        }
+
         $ok = true;
-        array_walk_recursive($vars, static function (&$v) use (&$ok, $toEncoding, $fromEncoding) {
-            if (false === $v = self::mb_convert_encoding($v, $toEncoding, $fromEncoding)) {
-                $ok = false;
+        foreach ($vars as $i => &$var) {
+            $convert = static function (&$v) use (&$ok, $toEncoding, $fromEncoding, $i) {
+                if (\is_string($v)) {
+                    if (false === $v = self::mb_convert_encoding($v, $toEncoding, $fromEncoding)) {
+                        $ok = false;
+                    }
+                } elseif (80600 <= \PHP_VERSION_ID && !\is_object($v)) {
+                    trigger_error(\sprintf('mb_convert_variables(): Argument #%d must be of type string|array|object or only contain entries of type string|array|object, %s given', 3 + $i, strtok(get_debug_type($v), ' ')), \E_USER_WARNING);
+                }
+            };
+
+            if (\is_array($var)) {
+                array_walk_recursive($var, $convert);
+            } else {
+                $convert($var);
             }
-        });
+        }
+        unset($var);
 
         return $ok ? $fromEncoding : false;
     }
@@ -238,7 +275,7 @@ final class Mbstring
         if ('UTF-8' === $encoding) {
             $encoding = null;
             if (!preg_match('//u', $s)) {
-                $s = @self::iconv('UTF-8', 'UTF-8', $s);
+                $s = self::scrubUtf8($s);
             }
         } else {
             $s = self::iconv($encoding, 'UTF-8', $s);
@@ -304,8 +341,7 @@ final class Mbstring
         if ('UTF-8' === $encoding) {
             $encoding = null;
             if (!preg_match('//u', $s)) {
-                // glibc's iconv() keeps code points above U+10FFFF, encoded on 4 to 6 bytes
-                $s = preg_replace('/\xF4[\x90-\xBF][\x80-\xBF]*+|[\xF5-\xFF][\x80-\xBF]*+/', '', @self::iconv('UTF-8', 'UTF-8', $s));
+                $s = self::scrubUtf8($s);
             }
         } else {
             $s = self::iconv($encoding, 'UTF-8', $s);
@@ -358,8 +394,7 @@ final class Mbstring
         if ('UTF-8' === $encoding) {
             $encoding = null;
             if (!preg_match('//u', $s)) {
-                // glibc's iconv() keeps code points above U+10FFFF, encoded on 4 to 6 bytes
-                $s = preg_replace('/\xF4[\x90-\xBF][\x80-\xBF]*+|[\xF5-\xFF][\x80-\xBF]*+/', '', @self::iconv('UTF-8', 'UTF-8', $s));
+                $s = self::scrubUtf8($s);
             }
         } else {
             $s = self::iconv($encoding, 'UTF-8', $s);
@@ -858,12 +893,16 @@ final class Mbstring
     public static function mb_strwidth($s, $encoding = null)
     {
         $encoding = self::getEncoding($encoding);
+        $wideChars = '/[\x{1100}-\x{115F}\x{2329}\x{232A}\x{2E80}-\x{303E}\x{3040}-\x{A4CF}\x{AC00}-\x{D7A3}\x{F900}-\x{FAFF}\x{FE10}-\x{FE19}\x{FE30}-\x{FE6F}\x{FF00}-\x{FF60}\x{FFE0}-\x{FFE6}\x{20000}-\x{2FFFD}\x{30000}-\x{3FFFD}]/u';
 
         if ('UTF-8' !== $encoding) {
             $s = self::iconv($encoding, 'UTF-8', $s);
+        } elseif (!preg_match('//u', $s)) {
+            // Each maximal subpart of an ill-formed sequence is one column wide
+            return preg_match_all(self::UTF8_CHAR_REGEX, $s) + preg_match_all($wideChars, self::scrubUtf8($s));
         }
 
-        $s = preg_replace('/[\x{1100}-\x{115F}\x{2329}\x{232A}\x{2E80}-\x{303E}\x{3040}-\x{A4CF}\x{AC00}-\x{D7A3}\x{F900}-\x{FAFF}\x{FE10}-\x{FE19}\x{FE30}-\x{FE6F}\x{FF00}-\x{FF60}\x{FFE0}-\x{FFE6}\x{20000}-\x{2FFFD}\x{30000}-\x{3FFFD}]/u', '', $s, -1, $wide);
+        $s = preg_replace($wideChars, '', $s, -1, $wide);
 
         return ($wide << 1) + iconv_strlen($s, 'UTF-8');
     }
@@ -1217,8 +1256,7 @@ final class Mbstring
      */
     private static function mb_trim_invalid_utf8(string $string, ?string $characters, string $function): string
     {
-        // Well-formed characters in group 1, then the maximal subparts of ill-formed sequences
-        $regex = '/([\x00-\x7F]|[\xC2-\xDF][\x80-\xBF]|\xE0[\xA0-\xBF][\x80-\xBF]|[\xE1-\xEC\xEE\xEF][\x80-\xBF]{2}|\xED[\x80-\x9F][\x80-\xBF]|\xF0[\x90-\xBF][\x80-\xBF]{2}|[\xF1-\xF3][\x80-\xBF]{3}|\xF4[\x80-\x8F][\x80-\xBF]{2})|\xE0[\xA0-\xBF]|[\xE1-\xEC\xEE\xEF][\x80-\xBF]|\xED[\x80-\x9F]|\xF0[\x90-\xBF][\x80-\xBF]?|[\xF1-\xF3][\x80-\xBF]{1,2}|\xF4[\x80-\x8F][\x80-\xBF]?|[\x80-\xFF]/';
+        $regex = self::UTF8_CHAR_REGEX;
 
         // Ill-formed sequences leave group 1 empty: they are trimmed when $characters has one too
         preg_match_all($regex, $characters ?? "\0 \f\n\r\t\v\u{00A0}\u{1680}\u{2000}\u{2001}\u{2002}\u{2003}\u{2004}\u{2005}\u{2006}\u{2007}\u{2008}\u{2009}\u{200A}\u{2028}\u{2029}\u{202F}\u{205F}\u{3000}\u{0085}\u{180E}", $m);
@@ -1251,7 +1289,97 @@ final class Mbstring
 
         $string = substr($string, $start, $end - $start);
 
-        return 'none' === mb_substitute_character() ? preg_replace($regex, '$1', $string) : mb_convert_encoding($string, 'UTF-8', 'UTF-8');
+        return 'none' === mb_substitute_character() ? self::scrubUtf8($string) : mb_convert_encoding($string, 'UTF-8', 'UTF-8');
+    }
+
+    private static function scrubUtf8(string $s): string
+    {
+        return preg_replace(self::UTF8_CHAR_REGEX, '$1', $s);
+    }
+
+    /**
+     * @param true[] $referenceIds The ids of the references followed to reach $array
+     */
+    private static function convertArray(array $array, $toEncoding, $fromEncoding, array $referenceIds = []): array
+    {
+        $r = [];
+
+        foreach ($array as $key => $v) {
+            if (null !== $v && !\is_scalar($v) && !\is_array($v)) {
+                trigger_error('mb_convert_encoding(): Object is not supported', \E_USER_WARNING);
+                continue;
+            }
+
+            $k = \is_string($key) ? self::mb_convert_encoding($key, $toEncoding, $fromEncoding) : $key;
+
+            if (\is_string($v)) {
+                $v = self::mb_convert_encoding($v, $toEncoding, $fromEncoding);
+            } elseif (\is_array($v)) {
+                // Only a reference can close a cycle: following the same one twice means one was found
+                $id = 70400 <= \PHP_VERSION_ID && ($reference = \ReflectionReference::fromArrayElement($array, $key)) ? $reference->getId() : null;
+
+                if (null !== $id && isset($referenceIds[$id])) {
+                    trigger_error('mb_convert_encoding(): Cannot convert recursively referenced values', \E_USER_WARNING);
+                    $v = [];
+                } else {
+                    $v = self::convertArray($v, $toEncoding, $fromEncoding, null === $id ? $referenceIds : $referenceIds + [$id => true]);
+                }
+            }
+
+            // Keys that collide once converted keep their first value
+            $r += [$k => $v];
+        }
+
+        return $r;
+    }
+
+    /**
+     * Returns the error native mbstring throws for these encoding arguments, if any.
+     */
+    private static function getConversionError(string $function, int $argument, $toEncoding, $fromEncoding): ?string
+    {
+        if (!self::isConvertibleEncoding((string) $toEncoding)) {
+            return \sprintf('%s(): Argument #%d ($to_encoding) must be a valid encoding, "%s" given', $function, $argument, $toEncoding);
+        }
+
+        if (null === $fromEncoding) {
+            return null;
+        }
+
+        if (!$list = \is_array($fromEncoding) ? $fromEncoding : ('' === $fromEncoding ? [] : explode(',', $fromEncoding))) {
+            return \sprintf('%s(): Argument #%d ($from_encoding) must specify at least one encoding', $function, 1 + $argument);
+        }
+
+        foreach ($list as $encoding) {
+            $encoding = \is_array($fromEncoding) ? (string) $encoding : trim($encoding, " \t");
+
+            // PHP 8.4 takes an empty entry of a comma-separated list for "auto"
+            if ('' === $encoding && !\is_array($fromEncoding) && 80400 <= \PHP_VERSION_ID) {
+                continue;
+            }
+
+            if (0 !== strcasecmp($encoding, 'auto') && !self::isConvertibleEncoding($encoding)) {
+                return \sprintf('%s(): Argument #%d ($from_encoding) contains invalid encoding "%s"', $function, 1 + $argument, $encoding);
+            }
+        }
+
+        return null;
+    }
+
+    private static function isConvertibleEncoding(string $encoding): bool
+    {
+        if (isset(self::$convertibleEncodings[$encoding])) {
+            return true;
+        }
+
+        $normalizedEncoding = self::getEncoding($encoding);
+
+        // Native encoding names use no other characters, while iconv() also accepts suffixes like //TRANSLIT
+        if ('' === $normalizedEncoding || preg_match('/[^\w#\-.:]/', $encoding) || (null === (self::UNSUPPORTED_CODEPOINT_ENCODINGS[$normalizedEncoding] ?? null) && false === @iconv($normalizedEncoding, $normalizedEncoding, ''))) {
+            return false;
+        }
+
+        return self::$convertibleEncodings[$encoding] = true;
     }
 
     private static function assertEncoding(string $encoding, string $errorFormat): bool
