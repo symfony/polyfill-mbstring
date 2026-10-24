@@ -827,7 +827,10 @@ final class Mbstring
     public static function mb_strwidth($s, $encoding = null)
     {
         $encoding = self::getEncoding($encoding);
-        $wideChars = '/[\x{1100}-\x{115F}\x{2329}\x{232A}\x{2E80}-\x{303E}\x{3040}-\x{A4CF}\x{AC00}-\x{D7A3}\x{F900}-\x{FAFF}\x{FE10}-\x{FE19}\x{FE30}-\x{FE6F}\x{FF00}-\x{FF60}\x{FFE0}-\x{FFE6}\x{20000}-\x{2FFFD}\x{30000}-\x{3FFFD}]/u';
+        static $wideChars = null;
+        if (null === $wideChars) {
+            $wideChars = self::getData('eastAsianWidthRegexp');
+        }
 
         if ('UTF-8' !== $encoding) {
             $s = self::iconv($encoding, 'UTF-8', $s);
