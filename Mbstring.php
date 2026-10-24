@@ -1374,7 +1374,12 @@ final class Mbstring
 
     private static function title_case(array $s)
     {
-        return self::mb_convert_case($s[1], \MB_CASE_UPPER, 'UTF-8').self::mb_convert_case($s[2], \MB_CASE_LOWER, 'UTF-8');
+        static $titleCase = null;
+        if (null === $titleCase) {
+            $titleCase = self::getData('titleCase');
+        }
+
+        return ($titleCase[$s[1]] ?? self::mb_convert_case($s[1], \MB_CASE_UPPER, 'UTF-8')).self::mb_convert_case($s[2], \MB_CASE_LOWER, 'UTF-8');
     }
 
     private static function getData($file)
