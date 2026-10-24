@@ -1414,6 +1414,10 @@ final class Mbstring
             return 'UTF-16BE';
         }
 
+        if ('UCS-2' === $encoding) {
+            return 'UCS-2BE';
+        }
+
         return $encoding;
     }
 
